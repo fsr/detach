@@ -223,6 +223,7 @@ def send_mail(mail):
     conn = get_smtp_conn()
     conn.send_message(mail)
 
+
 if __name__ == "__main__":
     import argparse
 
