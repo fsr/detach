@@ -67,7 +67,10 @@ def filter_and_extract_nested_mails(mails):
 def decode_header_string(hs):
     result = []
     for data, encoding in email.header.decode_header(hs):
-        result.append(data.decode(encoding or "ascii"))
+        if isinstance(data, str):
+            result.append(data)
+        else:
+            result.append(data.decode(encoding or "ascii"))
     return "".join(result)
 
 
