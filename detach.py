@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import base64
+import configparser
 import smtplib
 import email.header
 import email.mime.multipart
 import email.mime.text
 import email.parser
 import os
+import xdg.BaseDirectory
 
 from datetime import datetime
 
@@ -215,41 +217,15 @@ def process_mail(outer, inner):
     return new_message
 
 
-def get_smtp_conn(__data={}):
-    try:
-        return __data["conn"]
-    except KeyError:
-        conn = smtplib.SMTP("localhost", 25)
-        conn.starttls()
-        __data["conn"] = conn
-        return conn
+def get_smtp_conn(host, port):
+    conn = smtplib.SMTP(host, port)
+    conn.starttls()
+    return conn
 
 
-def send_mail(mail):
-    conn = get_smtp_conn()
-    conn.send_message(mail)
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--with-read",
-        dest="exclude_seen",
-        action="store_false",
-        default=True,
-        help="Exclude messages marked as read (seen)"
-    )
-    parser.add_argument(
-        "maildir",
-        help="Path to maildir"
-    )
-
-    args = parser.parse_args()
-
-    mails = get_mails(args.maildir)
-    if args.exclude_seen:
+def run(maildir, smtp_conn, exclude_seen):
+    mails = get_mails(maildir)
+    if exclude_seen:
         mails = exclude_seen_mails(mails)
 
     parsed_mails = parse_mails(mails)
@@ -270,4 +246,65 @@ if __name__ == "__main__":
                 parsed, nested
             )
 
-            send_mail(mail_to_send)
+            smtp_conn.send_message(mail_to_send)
+
+if __name__ == "__main__":
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config", "-c",
+        help="Configuration file to use, in addition to system- and user-wide"
+        " configuration",
+        default=None
+    )
+
+    parser.add_argument(
+        "--with-read",
+        dest="exclude_seen",
+        action="store_false",
+        default=True,
+        help="Exclude messages marked as read (seen) "
+        "(overrides value obtained from configuration)"
+    )
+
+    parser.add_argument(
+        "-m", "--maildir",
+        help="Path to maildir (overrides value obtained from configuration)",
+        default=None,
+    )
+
+    args = parser.parse_args()
+
+    cfg = configparser.ConfigParser()
+
+    config_paths = list(xdg.BaseDirectory.load_config_paths("detach.ini"))
+    config_paths.reverse()
+    if args.config:
+        config_paths.append(args.config)
+
+    cfg.read(config_paths)
+
+    if args.maildir:
+        cfg.set("detach", "maildir", args.maildir)
+
+    if not args.exclude_seen:
+        cfg.set("detach", "exclude-seen", "false")
+
+    try:
+        maildir = cfg.get("detach", "maildir")
+        exclude_seen = cfg.get("detach", "exclude-seen", fallback=True)
+        smtp_host = cfg.get("smtp", "host", fallback="localhost")
+        smtp_port = cfg.getint("smtp", "port", fallback=25)
+    except (configparser.NoOptionError,
+            configparser.NoSectionError,
+            ValueError) as e:
+        print("configuration error:", str(e))
+        sys.exit(2)
+
+    conn = get_smtp_conn(smtp_host, smtp_port)
+    try:
+        run(maildir, conn, exclude_seen)
+    finally:
+        conn.close()
