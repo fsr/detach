@@ -120,6 +120,10 @@ def extract_attachment_filename(part):
         name, _, value = option.partition("=")
         if name == "filename":
             return decode_header_string(value).strip('"').replace("/", "_")
+        elif name == "filename*":
+            if value.startswith("UTF-8''"):
+                value = value[7:]
+            return decode_header_string(value).strip('"').replace("/", "_")
 
     return None
 
