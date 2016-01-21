@@ -188,7 +188,9 @@ def process_mail(outer, inner):
 
     textual_part = email.mime.multipart.MIMEMultipart("alternative")
     for data in textual_data:
-        textual_part.attach(data)
+        # hack to work around weird muas adding empty plaintext parts
+        if data.get_payload().strip():
+            textual_part.attach(data)
 
     new_message.attach(textual_part)
 
