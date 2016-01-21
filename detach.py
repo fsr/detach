@@ -297,8 +297,7 @@ if __name__ == "__main__":
         exclude_seen = cfg.get("detach", "exclude-seen", fallback=True)
         smtp_host = cfg.get("smtp", "host", fallback="localhost")
         smtp_port = cfg.getint("smtp", "port", fallback=25)
-        dir_pattern = cfg.get("detach", "dir-pattern",
-                              fallback="/home/fsr/attachments/%Y/%Y%m%d_{}")
+        dir_pattern = cfg.get("detach", "dir-pattern")
     except (configparser.NoOptionError,
             configparser.NoSectionError,
             ValueError) as e:
