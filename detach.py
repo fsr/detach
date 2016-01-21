@@ -174,7 +174,7 @@ def process_mail(outer, inner):
             print("  [{}]: {}".format(i+1, name))
 
         dirfmt = datetime.utcnow().strftime(
-            "/home/fsr/attachments/%Y/%Y%m%d_{}"
+            dir_pattern
         )
         destdir = ask_nonexisting_dir(
             "attachment directory name (only suffix): ",
@@ -223,7 +223,7 @@ def get_smtp_conn(host, port):
     return conn
 
 
-def run(maildir, smtp_conn, exclude_seen):
+def run(maildir, smtp_conn, exclude_seen, dir_pattern):
     mails = get_mails(maildir)
     if exclude_seen:
         mails = exclude_seen_mails(mails)
@@ -243,7 +243,7 @@ def run(maildir, smtp_conn, exclude_seen):
 
         if ask("Process mail? [{}]", ["y", "n"]) == "y":
             mail_to_send = process_mail(
-                parsed, nested
+                parsed, nested, dir_pattern
             )
 
             smtp_conn.send_message(mail_to_send)
@@ -297,6 +297,8 @@ if __name__ == "__main__":
         exclude_seen = cfg.get("detach", "exclude-seen", fallback=True)
         smtp_host = cfg.get("smtp", "host", fallback="localhost")
         smtp_port = cfg.getint("smtp", "port", fallback=25)
+        dir_pattern = cfg.get("detach", "dir-pattern",
+                              fallback="/home/fsr/attachments/%Y/%Y%m%d_{}")
     except (configparser.NoOptionError,
             configparser.NoSectionError,
             ValueError) as e:
@@ -305,6 +307,6 @@ if __name__ == "__main__":
 
     conn = get_smtp_conn(smtp_host, smtp_port)
     try:
-        run(maildir, conn, exclude_seen)
+        run(maildir, conn, exclude_seen, dir_pattern)
     finally:
         conn.close()
