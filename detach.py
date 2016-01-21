@@ -275,6 +275,13 @@ if __name__ == "__main__":
         default=None,
     )
 
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        dest="verbose",
+        help="Be more verbose"
+    )
+
     args = parser.parse_args()
 
     cfg = configparser.RawConfigParser()
@@ -303,6 +310,10 @@ if __name__ == "__main__":
             ValueError) as e:
         print("configuration error:", str(e))
         sys.exit(2)
+
+    if args.verbose:
+        print("looking in mailbox: {}".format(maildir))
+        print("attachment directory pattern: {}".format(dir_pattern))
 
     conn = get_smtp_conn(smtp_host, smtp_port)
     try:
