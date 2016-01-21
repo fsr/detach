@@ -277,7 +277,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    cfg = configparser.ConfigParser()
+    cfg = configparser.RawConfigParser()
 
     config_paths = list(xdg.BaseDirectory.load_config_paths("detach.ini"))
     config_paths.reverse()
