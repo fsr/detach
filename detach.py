@@ -162,7 +162,7 @@ def decode_attachment(part):
         raise ValueError("Unknown transfer encoding: {}".format(encoding))
 
 
-def process_mail(outer, inner):
+def process_mail(outer, inner, dir_pattern):
     TEXT_CONTENT_TYPES = {"text/html", "text/plain",
                           "application/html"}
     HEADERS_TO_TRANSFER = [
