@@ -237,9 +237,12 @@ def process_mail(outer, inner, dir_pattern):
     return new_message
 
 
-def get_smtp_conn(host, port):
+def get_smtp_conn(host, port, verbose):
+    if verbose:
+        print("connecting to {}:{}".format(host, port))
     conn = smtplib.SMTP(host, port)
     conn.starttls()
+    conn.ehlo_or_helo_if_needed()
     return conn
 
 
@@ -335,7 +338,7 @@ if __name__ == "__main__":
         print("looking in mailbox: {}".format(maildir))
         print("attachment directory pattern: {}".format(dir_pattern))
 
-    conn = get_smtp_conn(smtp_host, smtp_port)
+    conn = get_smtp_conn(smtp_host, smtp_port, args.verbose)
     try:
         run(maildir, conn, exclude_seen, dir_pattern)
     finally:
