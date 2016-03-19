@@ -26,6 +26,22 @@ file name), so it is preferable to pre-filter your mails using this setting.
 through ``strftime(2)`` and then all occurences of ``{}`` are replaced by a
 name which is prompted from the user interactively.
 
+
+In the optional ``[spam]`` section of the config file, commands which can be
+used to train spam and ham can be configured. Those have no defaults.
+Example for the ``sa-learn`` command::
+
+  [spam]
+  learn-spam=sa-learn --spam
+  learn-ham=sa-learn --ham
+
+The commands receive the message to learn on stdin. The options are in shell
+syntax, i.e. to pass ``foo bar`` as one argument use ``command "foo bar"``. For
+more infos on the exact syntax, see the
+`shlex.split() Python documentation
+<https://docs.python.org/3/library/shlex.html#shlex.split>`_.
+
+
 Usage
 -----
 
@@ -36,6 +52,9 @@ criteria.
 Otherwise, it will ask you for each mailman moderation notice it found whether
 it shall process it further. If you agree, it will analyse the mail for
 attachments and list them to you.
+
+If ``learn-spam`` has been configured, a third option (``s``) is available. In
+that case, the message is trained as spam and not processed otherwise.
 
 It then asks you for a folder name to use (see the ``Configuration`` section
 for details) and stores the attachments in that folder. Afterwards, the

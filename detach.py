@@ -282,7 +282,7 @@ def run(maildir, smtp_conn, exclude_seen, dir_pattern, learn_spam, learn_ham):
             decode_header_string(nested["Subject"])
         ))
 
-        action = ask("Process mail? [{}]", options)
+        action = ask("Process mail? (Y = yes, n = no, s = learn as spam) [{}]", options)
         if action == "y":
             mail_to_send = process_mail(
                 parsed, nested, dir_pattern
