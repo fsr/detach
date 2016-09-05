@@ -31,7 +31,7 @@ name which is prompted from the user interactively.
 The actual directory is built by prefixing the result of the ``pattern`` 
 expansion with the ``dir`` setting. The mail also provides an URL where the
 attachments can be reached. The base URL is configured by the ``url`` setting
-and included in the mail with the expaneded ``pattern`` appended to it.
+and included in the mail with the expanded ``pattern`` appended to it.
 
 In the optional ``[spam]`` section of the config file, commands which can be
 used to train spam and ham can be configured. Those have no defaults.
