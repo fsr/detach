@@ -40,7 +40,7 @@ the attachments and put them into
 
     {destdir}
 
-they can be accessed via
+which can be accessed via
 
     {desturl}
 
