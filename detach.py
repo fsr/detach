@@ -358,8 +358,8 @@ if __name__ == "__main__":
         smtp_host = cfg.get("smtp", "host", fallback="localhost")
         smtp_port = cfg.getint("smtp", "port", fallback=25)
         pattern = cfg.get("detach", "pattern")
-        dir_pattern = pattern+cfg.get("detach", "dir")
-	url_pattern = pattern+cfg.get("detach", "url")
+        dir_pattern = cfg.get("detach", "dir")+pattern
+	url_pattern = cfg.get("detach", "url")+pattern
         learn_spam = cfg.get(
             "spam", "learn-spam",
             fallback=None)
