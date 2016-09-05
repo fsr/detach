@@ -40,6 +40,10 @@ the attachments and put them into
 
     {destdir}
 
+the can be accessed via
+
+    {desturl}
+
 for your convenience.
 """
 
@@ -114,13 +118,14 @@ def ask(prompt, options):
         print("Incorrect choice")
 
 
-def ask_nonexisting_dir(prompt, dirfmt):
+def ask_nonexisting_dir(prompt, dirfmt, urlfmt):
     while True:
         destdir = input(prompt)
         full = dirfmt.format(destdir)
+	fullurl = urlfmt.format(destdir)
         try:
             os.makedirs(full)
-            return full
+            return (full, fullurl)
         except FileExistsError:
             print("File exists, use a different path")
 
@@ -164,7 +169,7 @@ def decode_attachment(part):
         raise ValueError("Unknown transfer encoding: {}".format(encoding))
 
 
-def process_mail(outer, inner, dir_pattern):
+def process_mail(outer, inner, dir_pattern, url_pattern):
     TEXT_CONTENT_TYPES = {"text/html", "text/plain",
                           "application/html"}
     HEADERS_TO_TRANSFER = [
@@ -198,9 +203,12 @@ def process_mail(outer, inner, dir_pattern):
         dirfmt = datetime.utcnow().strftime(
             dir_pattern
         )
-        destdir = ask_nonexisting_dir(
+        urlfmt = datetime.utcnow().strftime(
+            url_pattern
+        )
+        (destdir,desturl) = ask_nonexisting_dir(
             "attachment directory name (only suffix): ",
-            dirfmt
+            dirfmt, urlfmt
         )
         os.chmod(destdir, 0o775)
         for name, data in attachments:
@@ -210,7 +218,7 @@ def process_mail(outer, inner, dir_pattern):
             os.chmod(path, 0o664)
 
         note = email.mime.text.MIMEText(
-            PREFIXTEXT.format(destdir=destdir)
+            PREFIXTEXT.format(destdir=destdir,desturl=desturl)
         )
         new_message.attach(note)
 
@@ -285,7 +293,7 @@ def run(maildir, smtp_conn, exclude_seen, dir_pattern, learn_spam, learn_ham):
         action = ask("Process mail? (Y = yes, n = no, s = learn as spam) [{}]", options)
         if action == "y":
             mail_to_send = process_mail(
-                parsed, nested, dir_pattern
+                parsed, nested, dir_pattern, url_pattern,
             )
 
             smtp_conn.send_message(mail_to_send)
@@ -349,7 +357,9 @@ if __name__ == "__main__":
         exclude_seen = cfg.get("detach", "exclude-seen", fallback=True)
         smtp_host = cfg.get("smtp", "host", fallback="localhost")
         smtp_port = cfg.getint("smtp", "port", fallback=25)
-        dir_pattern = cfg.get("detach", "dir-pattern")
+        pattern = cfg.get("detach", "pattern")
+        dir_pattern = pattern+cfg.get("detach", "pattern")
+	url_pattern = pattern+cfg.get("detach", "pattern")
         learn_spam = cfg.get(
             "spam", "learn-spam",
             fallback=None)
@@ -374,6 +384,6 @@ if __name__ == "__main__":
 
     conn = get_smtp_conn(smtp_host, smtp_port, args.verbose)
     try:
-        run(maildir, conn, exclude_seen, dir_pattern, learn_spam, learn_ham)
+        run(maildir, conn, exclude_seen, dir_pattern, url_pattern, learn_spam, learn_ham)
     finally:
         conn.close()
