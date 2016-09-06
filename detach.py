@@ -122,7 +122,7 @@ def ask_nonexisting_dir(prompt, dirfmt, urlfmt):
     while True:
         destdir = input(prompt)
         full = dirfmt.format(destdir)
-	fullurl = urlfmt.format(destdir)
+        fullurl = urlfmt.format(destdir)
         try:
             os.makedirs(full)
             return (full, fullurl)
@@ -359,7 +359,7 @@ if __name__ == "__main__":
         smtp_port = cfg.getint("smtp", "port", fallback=25)
         pattern = cfg.get("detach", "pattern")
         dir_pattern = cfg.get("detach", "dir")+pattern
-	url_pattern = cfg.get("detach", "url")+pattern
+        url_pattern = cfg.get("detach", "url")+pattern
         learn_spam = cfg.get(
             "spam", "learn-spam",
             fallback=None)
