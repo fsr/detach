@@ -268,7 +268,7 @@ def get_smtp_conn(host, port, verbose):
     return conn
 
 
-def run(maildir, smtp_conn, exclude_seen, dir_pattern, learn_spam, learn_ham):
+def run(maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern, learn_spam, learn_ham):
     mails = get_mails(maildir)
     if exclude_seen:
         mails = exclude_seen_mails(mails)
