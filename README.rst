@@ -9,7 +9,9 @@ The configuration file is in dead-simple INI-like file format::
     [detach]
     maildir=/path/to/maildir/.INBOX/foo
     with-read=false
-    dir-pattern=/home/fsr/attachments/%Y/%Y%m%d_{}
+    pattern=%Y/%Y%m%d_{}
+    dir=/home/fsr/attachments/
+    url=https://www.ifsr.de/attachments/
 
 The ``maildir`` setting configures where detach.py will look for mailman
 moderation emails. Note that it does not recurse into sub-directories, so you
@@ -22,10 +24,14 @@ is able to determine whether it is a moderation notice from mailman or not. The
 check whether the mail has been marked as read is quick (it is contained in the
 file name), so it is preferable to pre-filter your mails using this setting.
 
-``dir-pattern`` specifies where attachments will be saved. It is first passed
+``pattern`` specifies where attachments will be saved. It is first passed
 through ``strftime(2)`` and then all occurences of ``{}`` are replaced by a
 name which is prompted from the user interactively.
 
+The actual directory is built by prefixing the result of the ``pattern`` 
+expansion with the ``dir`` setting. The mail also provides an URL where the
+attachments can be reached. The base URL is configured by the ``url`` setting
+and included in the mail with the expanded ``pattern`` appended to it.
 
 In the optional ``[spam]`` section of the config file, commands which can be
 used to train spam and ham can be configured. Those have no defaults.
