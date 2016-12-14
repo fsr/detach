@@ -134,22 +134,7 @@ def find_attachments(parts):
 
 
 def extract_attachment_filename(part):
-    # normalize whitespace
-    content_dispo = " ".join(part["Content-Disposition"].split())
-
-    # XXX: this is not proper parsing... this should be fixed at some point
-    options = content_dispo.split(";", 1)
-    for option in options:
-        option = option.strip()
-        name, _, value = option.partition("=")
-        if name == "filename":
-            return decode_header_string(value).strip('"').replace("/", "_")
-        elif name == "filename*":
-            if value.startswith("UTF-8''"):
-                value = value[7:]
-            return decode_header_string(value).strip('"').replace("/", "_")
-
-    return None
+    return part.get_filename()
 
 
 def decode_attachment(part):
