@@ -35,16 +35,16 @@ from datetime import datetime
 
 
 PREFIXTEXT = """\
-NOTE: This is detach.py, sorry to interrupt you. I have taken
-the attachments and put them into
+NOTIZ: Dies ist die Abkopplungspython, entschuldigen Sie die Störung. Ich nahm
+die Anhänge und tat sie nach
 
     {destdir}
 
-which can be accessed via
+auf welches zugegriffen werden kann via
 
     {desturl}
 
-for your convenience.
+für Ihre Bequemlichkeit.
 """
 
 
