@@ -281,7 +281,11 @@ def run(maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern, learn_spam, 
                 parsed, nested, dir_pattern, url_pattern,
             )
 
-            smtp_conn.send_message(mail_to_send)
+            try:
+                smtp_conn.send_message(mail_to_send)
+            except smtplib.SMTPSenderRefused as err:
+                smtp_conn = get_smtp_conn(smtp_host, smtp_port, args.verbose)
+                smtp_conn.send_message(mail_to_send)
             learn_message(nested, learn_ham)
         elif action == "s":
             learn_message(nested, learn_spam)
