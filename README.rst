@@ -7,6 +7,7 @@ Configuration
 The configuration file is in dead-simple INI-like file format::
 
     [detach]
+    user=stuhlbein
     maildir=/path/to/maildir/.INBOX/foo
     with-read=false
     pattern=%Y/%Y%m%d_{}

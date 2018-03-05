@@ -30,6 +30,7 @@ import os
 import subprocess
 import shlex
 import xdg.BaseDirectory
+import re
 
 from datetime import datetime
 
@@ -89,7 +90,6 @@ def filter_and_extract_nested_mails(mails):
         for part in payload:
             if part["Content-Type"] == "message/rfc822":
                 yield mail, part.get_payload()[0]
-                break
 
 
 def decode_header_string(hs):
@@ -154,7 +154,8 @@ def decode_attachment(part):
         raise ValueError("Unknown transfer encoding: {}".format(encoding))
 
 
-def process_mail(outer, inner, dir_pattern, url_pattern):
+def process_mail(outer, inner, dir_pattern, url_pattern,
+        recipient="fsr@ifsr.de", user="fsr-request@ifsr.de"):
     TEXT_CONTENT_TYPES = {"text/html", "text/plain",
                           "application/html"}
     HEADERS_TO_TRANSFER = [
@@ -216,9 +217,12 @@ def process_mail(outer, inner, dir_pattern, url_pattern):
     new_message.attach(textual_part)
 
     for headername in HEADERS_TO_TRANSFER:
-        new_message[headername] = inner[headername]
+        if user != "fsr-request" and headername == "From":
+            new_message[headername] = user + "@ifsr.de"
+        else:
+            new_message[headername] = inner[headername]
 
-    new_message["To"] = "fsr@ifsr.de"
+    new_message["To"] = recipient
     new_message["User-Agent"] = "detach.py/0.1"
 
     old_message_id = inner["Message-ID"].strip("<>")
@@ -253,7 +257,7 @@ def get_smtp_conn(host, port, verbose):
     return conn
 
 
-def run(maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern, learn_spam, learn_ham):
+def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern, learn_spam, learn_ham):
     mails = get_mails(maildir)
     if exclude_seen:
         mails = exclude_seen_mails(mails)
@@ -266,29 +270,42 @@ def run(maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern, learn_spam, 
     if learn_spam:
         options.append("s")
 
+    # confirm id pattern
+    pattern = re.compile("confirm\s\w{40}")
+
     for parsed, nested in mails_with_nested_mails:
-        print("found matching mail:")
-        print("  Subject: {}".format(
-            decode_header_string(parsed["Subject"])
-        ))
-        print("  nested Subject: {}".format(
-            decode_header_string(nested["Subject"])
-        ))
-
-        action = ask("Process mail? (Y = yes, n = no, s = learn as spam) [{}]", options)
+        if not pattern.match(decode_header_string(nested["Subject"])):
+            print("found matching mail:")
+            print("  Subject: {}".format(
+                decode_header_string(parsed["Subject"])
+            ))
+            print("  nested Subject: {}".format(
+                decode_header_string(nested["Subject"])
+            ))
+            action = ask("Process mail? (Y = yes, n = no, s = learn as spam) [{}]", options)
+            if action == "y":
+                mail_to_send = process_mail(
+                    parsed, nested, dir_pattern, url_pattern,
+                )
+                learn_message(nested, learn_ham)
+            elif action == "s":
+                learn_message(nested, learn_spam)
+        else:
+            print()
+            action = ask("Reject mail for mailman? (Y = yes, n = no) [{}]", ["y", "n"])
+            if action == "y":
+                mail_to_send = process_mail(
+                        parsed, nested, dir_pattern, url_pattern,
+                        "fsr-request@ifsr.de", user
+                )
         if action == "y":
-            mail_to_send = process_mail(
-                parsed, nested, dir_pattern, url_pattern,
-            )
-
             try:
                 smtp_conn.send_message(mail_to_send)
             except smtplib.SMTPSenderRefused as err:
                 smtp_conn = get_smtp_conn(smtp_host, smtp_port, args.verbose)
                 smtp_conn.send_message(mail_to_send)
-            learn_message(nested, learn_ham)
-        elif action == "s":
-            learn_message(nested, learn_spam)
+
+
 
 if __name__ == "__main__":
     import argparse
@@ -342,6 +359,7 @@ if __name__ == "__main__":
         cfg.set("detach", "exclude-seen", "false")
 
     try:
+        user = cfg.get("detach", "user")
         maildir = cfg.get("detach", "maildir")
         exclude_seen = cfg.get("detach", "exclude-seen", fallback=True)
         smtp_host = cfg.get("smtp", "host", fallback="localhost")
@@ -373,6 +391,6 @@ if __name__ == "__main__":
 
     conn = get_smtp_conn(smtp_host, smtp_port, args.verbose)
     try:
-        run(maildir, conn, exclude_seen, dir_pattern, url_pattern, learn_spam, learn_ham)
+        run(user, maildir, conn, exclude_seen, dir_pattern, url_pattern, learn_spam, learn_ham)
     finally:
         conn.close()
