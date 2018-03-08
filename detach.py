@@ -155,7 +155,7 @@ def decode_attachment(part):
 
 
 def process_mail(outer, inner, dir_pattern, url_pattern,
-        recipient="fsr@ifsr.de", user="fsr-request@ifsr.de"):
+        recipient="fsr@ifsr.de", user="fsr-request"):
     TEXT_CONTENT_TYPES = {"text/html", "text/plain",
                           "application/html"}
     HEADERS_TO_TRANSFER = [
