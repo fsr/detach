@@ -20,6 +20,7 @@
 #
 ########################################################################
 import base64
+import quopri
 import configparser
 import smtplib
 import email.header
@@ -150,6 +151,8 @@ def decode_attachment(part):
     encoding = encoding.strip()
     if encoding == "base64":
         return base64.b64decode(part.get_payload().encode("ascii"))
+    elif encoding == "quoted-printable":
+        return quopri.decodestring(part.get_payload().encode("ascii"))
     else:
         raise ValueError("Unknown transfer encoding: {}".format(encoding))
 
