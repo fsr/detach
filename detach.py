@@ -35,7 +35,6 @@ import re
 
 from datetime import datetime
 
-
 PREFIXTEXT = """\
 NOTE: This is detach.py, sorry to interrupt you. I have taken
 the attachments and put them into
@@ -83,7 +82,6 @@ def filter_list_admin_mails(mails):
 
 
 def filter_and_extract_nested_mails(mails):
-    parser = email.parser.Parser()
     for mail in mails:
         payload = mail.get_payload()
         if not isinstance(payload, list):
@@ -134,8 +132,8 @@ def ask_nonexisting_dir(prompt, dirfmt, urlfmt):
 def find_attachments(parts):
     for part in parts:
         content_dispo = part["Content-Disposition"]
-        if (content_dispo is not None and
-            content_dispo.lower().startswith("attachment")):
+        if (content_dispo is not None
+                and content_dispo.lower().startswith("attachment")):
             yield part
 
 
@@ -157,10 +155,13 @@ def decode_attachment(part):
         raise ValueError("Unknown transfer encoding: {}".format(encoding))
 
 
-def process_mail(outer, inner, dir_pattern, url_pattern,
-        recipient="fsr@ifsr.de", user="fsr-request"):
-    TEXT_CONTENT_TYPES = {"text/html", "text/plain",
-                          "application/html"}
+def process_mail(outer,
+                 inner,
+                 dir_pattern,
+                 url_pattern,
+                 recipient="fsr@ifsr.de",
+                 user="fsr-request"):
+    TEXT_CONTENT_TYPES = {"text/html", "text/plain", "application/html"}
     HEADERS_TO_TRANSFER = [
         "From",
         "Date",
@@ -187,18 +188,12 @@ def process_mail(outer, inner, dir_pattern, url_pattern,
     if attachments:
         print("attachments have been found:")
         for i, (name, _) in enumerate(attachments):
-            print("  [{}]: {}".format(i+1, name))
+            print("  [{}]: {}".format(i + 1, name))
 
-        dirfmt = datetime.utcnow().strftime(
-            dir_pattern
-        )
-        urlfmt = datetime.utcnow().strftime(
-            url_pattern
-        )
-        (destdir,desturl) = ask_nonexisting_dir(
-            "attachment directory name (only suffix): ",
-            dirfmt, urlfmt
-        )
+        dirfmt = datetime.utcnow().strftime(dir_pattern)
+        urlfmt = datetime.utcnow().strftime(url_pattern)
+        (destdir, desturl) = ask_nonexisting_dir(
+            "attachment directory name (only suffix): ", dirfmt, urlfmt)
         os.chmod(destdir, 0o775)
         for name, data in attachments:
             path = os.path.join(destdir, name)
@@ -207,8 +202,7 @@ def process_mail(outer, inner, dir_pattern, url_pattern,
             os.chmod(path, 0o664)
 
         note = email.mime.text.MIMEText(
-            PREFIXTEXT.format(destdir=destdir,desturl=desturl)
-        )
+            PREFIXTEXT.format(destdir=destdir, desturl=desturl))
         new_message.attach(note)
 
     textual_part = email.mime.multipart.MIMEMultipart("alternative")
@@ -233,18 +227,14 @@ def process_mail(outer, inner, dir_pattern, url_pattern,
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
 
     new_message["Message-ID"] = "<detached_at_{}_from_{}>".format(
-        timestamp,
-        old_message_id)
+        timestamp, old_message_id)
 
     return new_message
 
 
 def learn_message(message, command):
     print()
-    proc = subprocess.Popen(
-        command,
-        stdin=subprocess.PIPE
-    )
+    proc = subprocess.Popen(command, stdin=subprocess.PIPE)
     proc.communicate(message.as_bytes())
     if proc.wait() != 0:
         print("spam learn command failed.")
@@ -260,7 +250,8 @@ def get_smtp_conn(host, port, verbose):
     return conn
 
 
-def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern, learn_spam, learn_ham):
+def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern,
+        learn_spam, learn_ham):
     mails = get_mails(maildir)
     if exclude_seen:
         mails = exclude_seen_mails(mails)
@@ -280,34 +271,36 @@ def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern, learn_
         if not pattern.match(decode_header_string(nested["Subject"])):
             print("found matching mail:")
             print("  Subject: {}".format(
-                decode_header_string(parsed["Subject"])
-            ))
+                decode_header_string(parsed["Subject"])))
             print("  nested Subject: {}".format(
-                decode_header_string(nested["Subject"])
-            ))
-            action = ask("Process mail? (Y = yes, n = no, s = learn as spam) [{}]", options)
+                decode_header_string(nested["Subject"])))
+            action = ask(
+                "Process mail? (Y = yes, n = no, s = learn as spam) [{}]",
+                options)
             if action == "y":
                 mail_to_send = process_mail(
-                    parsed, nested, dir_pattern, url_pattern,
+                    parsed,
+                    nested,
+                    dir_pattern,
+                    url_pattern,
                 )
                 learn_message(nested, learn_ham)
             elif action == "s":
                 learn_message(nested, learn_spam)
         else:
             print()
-            action = ask("Reject mail for mailman? (Y = yes, n = no) [{}]", ["y", "n"])
+            action = ask("Reject mail for mailman? (Y = yes, n = no) [{}]",
+                         ["y", "n"])
             if action == "y":
-                mail_to_send = process_mail(
-                        parsed, nested, dir_pattern, url_pattern,
-                        "fsr-request@ifsr.de", user
-                )
+                mail_to_send = process_mail(parsed, nested, dir_pattern,
+                                            url_pattern, "fsr-request@ifsr.de",
+                                            user)
         if action == "y":
             try:
                 smtp_conn.send_message(mail_to_send)
-            except smtplib.SMTPSenderRefused as err:
+            except smtplib.SMTPSenderRefused:
                 smtp_conn = get_smtp_conn(smtp_host, smtp_port, args.verbose)
                 smtp_conn.send_message(mail_to_send)
-
 
 
 if __name__ == "__main__":
@@ -316,33 +309,31 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config", "-c",
+        "--config",
+        "-c",
         help="Configuration file to use, in addition to system- and user-wide"
         " configuration",
-        default=None
-    )
+        default=None)
+
+    parser.add_argument("--with-read",
+                        dest="exclude_seen",
+                        action="store_false",
+                        default=True,
+                        help="Exclude messages marked as read (seen) "
+                        "(overrides value obtained from configuration)")
 
     parser.add_argument(
-        "--with-read",
-        dest="exclude_seen",
-        action="store_false",
-        default=True,
-        help="Exclude messages marked as read (seen) "
-        "(overrides value obtained from configuration)"
-    )
-
-    parser.add_argument(
-        "-m", "--maildir",
+        "-m",
+        "--maildir",
         help="Path to maildir (overrides value obtained from configuration)",
         default=None,
     )
 
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        dest="verbose",
-        help="Be more verbose"
-    )
+    parser.add_argument("-v",
+                        "--verbose",
+                        action="store_true",
+                        dest="verbose",
+                        help="Be more verbose")
 
     args = parser.parse_args()
 
@@ -368,20 +359,15 @@ if __name__ == "__main__":
         smtp_host = cfg.get("smtp", "host", fallback="localhost")
         smtp_port = cfg.getint("smtp", "port", fallback=25)
         pattern = cfg.get("detach", "pattern")
-        dir_pattern = cfg.get("detach", "dir")+pattern
-        url_pattern = cfg.get("detach", "url")+pattern
-        learn_spam = cfg.get(
-            "spam", "learn-spam",
-            fallback=None)
+        dir_pattern = cfg.get("detach", "dir") + pattern
+        url_pattern = cfg.get("detach", "url") + pattern
+        learn_spam = cfg.get("spam", "learn-spam", fallback=None)
         if learn_spam is not None:
             learn_spam = shlex.split(learn_spam)
-        learn_ham = cfg.get(
-            "spam", "learn-ham",
-            fallback=None)
+        learn_ham = cfg.get("spam", "learn-ham", fallback=None)
         if learn_ham is not None:
             learn_ham = shlex.split(learn_ham)
-    except (configparser.NoOptionError,
-            configparser.NoSectionError,
+    except (configparser.NoOptionError, configparser.NoSectionError,
             ValueError) as e:
         print("configuration error:", str(e))
         sys.exit(2)
@@ -394,6 +380,7 @@ if __name__ == "__main__":
 
     conn = get_smtp_conn(smtp_host, smtp_port, args.verbose)
     try:
-        run(user, maildir, conn, exclude_seen, dir_pattern, url_pattern, learn_spam, learn_ham)
+        run(user, maildir, conn, exclude_seen, dir_pattern, url_pattern,
+            learn_spam, learn_ham)
     finally:
         conn.close()
