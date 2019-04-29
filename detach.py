@@ -28,9 +28,6 @@ import email.mime.multipart
 import email.mime.text
 import email.parser
 import os
-import subprocess
-import shlex
-import xdg.BaseDirectory
 import re
 
 from datetime import datetime
@@ -159,7 +156,7 @@ def process_mail(outer,
                  inner,
                  dir_pattern,
                  url_pattern,
-                 recipient="fsr@ifsr.de",
+                 recipient="FSR Informatik <fsr@ifsr.de>",
                  user="fsr-request"):
     TEXT_CONTENT_TYPES = {"text/html", "text/plain", "application/html"}
     HEADERS_TO_TRANSFER = [
@@ -232,15 +229,6 @@ def process_mail(outer,
     return new_message
 
 
-def learn_message(message, command):
-    print()
-    proc = subprocess.Popen(command, stdin=subprocess.PIPE)
-    proc.communicate(message.as_bytes())
-    if proc.wait() != 0:
-        print("spam learn command failed.")
-        print()
-
-
 def get_smtp_conn(host, port, verbose):
     if verbose:
         print("connecting to {}:{}".format(host, port))
@@ -271,9 +259,7 @@ def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern):
                 decode_header_string(parsed["Subject"])))
             print("  nested Subject: {}".format(
                 decode_header_string(nested["Subject"])))
-            action = ask(
-                "Process mail? (Y = yes, n = no) [{}]",
-                options)
+            action = ask("Process mail? (Y = yes, n = no) [{}]", options)
             if action == "y":
                 mail_to_send = process_mail(
                     parsed,
@@ -302,13 +288,6 @@ if __name__ == "__main__":
     import sys
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config",
-        "-c",
-        help="Configuration file to use, in addition to system- and user-wide"
-        " configuration",
-        default=None)
-
     parser.add_argument("--with-read",
                         dest="exclude_seen",
                         action="store_false",
@@ -333,12 +312,8 @@ if __name__ == "__main__":
 
     cfg = configparser.RawConfigParser()
 
-    config_paths = list(xdg.BaseDirectory.load_config_paths("detach.ini"))
-    config_paths.reverse()
-    if args.config:
-        config_paths.append(args.config)
-
-    cfg.read(config_paths)
+    config_path = os.path.expanduser('~/.config/detach.ini')
+    cfg.read(config_path)
 
     if args.maildir:
         cfg.set("detach", "maildir", args.maildir)
@@ -355,12 +330,6 @@ if __name__ == "__main__":
         pattern = cfg.get("detach", "pattern")
         dir_pattern = cfg.get("detach", "dir") + pattern
         url_pattern = cfg.get("detach", "url") + pattern
-        #  learn_spam = cfg.get("spam", "learn-spam", fallback=None)
-        #  if learn_spam is not None:
-        #      learn_spam = shlex.split(learn_spam)
-        #  learn_ham = cfg.get("spam", "learn-ham", fallback=None)
-        #  if learn_ham is not None:
-        #      learn_ham = shlex.split(learn_ham)
     except (configparser.NoOptionError, configparser.NoSectionError,
             ValueError) as e:
         print("configuration error:", str(e))
@@ -369,8 +338,6 @@ if __name__ == "__main__":
     if args.verbose:
         print("looking in mailbox: {}".format(maildir))
         print("attachment directory pattern: {}".format(dir_pattern))
-        #  print("using spam learn argv: {}".format(learn_spam))
-        #  print("using ham learn argv: {}".format(learn_ham))
 
     conn = get_smtp_conn(smtp_host, smtp_port, args.verbose)
     try:
