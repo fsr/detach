@@ -250,8 +250,7 @@ def get_smtp_conn(host, port, verbose):
     return conn
 
 
-def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern,
-        learn_spam, learn_ham):
+def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern):
     mails = get_mails(maildir)
     if exclude_seen:
         mails = exclude_seen_mails(mails)
@@ -261,8 +260,6 @@ def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern,
     mails_with_nested_mails = filter_and_extract_nested_mails(list_admin_mails)
 
     options = ["y", "n"]
-    if learn_spam:
-        options.append("s")
 
     # confirm id pattern
     pattern = re.compile("confirm\s\w{40}")
@@ -275,7 +272,7 @@ def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern,
             print("  nested Subject: {}".format(
                 decode_header_string(nested["Subject"])))
             action = ask(
-                "Process mail? (Y = yes, n = no, s = learn as spam) [{}]",
+                "Process mail? (Y = yes, n = no) [{}]",
                 options)
             if action == "y":
                 mail_to_send = process_mail(
@@ -284,9 +281,6 @@ def run(user, maildir, smtp_conn, exclude_seen, dir_pattern, url_pattern,
                     dir_pattern,
                     url_pattern,
                 )
-                learn_message(nested, learn_ham)
-            elif action == "s":
-                learn_message(nested, learn_spam)
         else:
             print()
             action = ask("Reject mail for mailman? (Y = yes, n = no) [{}]",
@@ -361,12 +355,12 @@ if __name__ == "__main__":
         pattern = cfg.get("detach", "pattern")
         dir_pattern = cfg.get("detach", "dir") + pattern
         url_pattern = cfg.get("detach", "url") + pattern
-        learn_spam = cfg.get("spam", "learn-spam", fallback=None)
-        if learn_spam is not None:
-            learn_spam = shlex.split(learn_spam)
-        learn_ham = cfg.get("spam", "learn-ham", fallback=None)
-        if learn_ham is not None:
-            learn_ham = shlex.split(learn_ham)
+        #  learn_spam = cfg.get("spam", "learn-spam", fallback=None)
+        #  if learn_spam is not None:
+        #      learn_spam = shlex.split(learn_spam)
+        #  learn_ham = cfg.get("spam", "learn-ham", fallback=None)
+        #  if learn_ham is not None:
+        #      learn_ham = shlex.split(learn_ham)
     except (configparser.NoOptionError, configparser.NoSectionError,
             ValueError) as e:
         print("configuration error:", str(e))
@@ -375,12 +369,11 @@ if __name__ == "__main__":
     if args.verbose:
         print("looking in mailbox: {}".format(maildir))
         print("attachment directory pattern: {}".format(dir_pattern))
-        print("using spam learn argv: {}".format(learn_spam))
-        print("using ham learn argv: {}".format(learn_ham))
+        #  print("using spam learn argv: {}".format(learn_spam))
+        #  print("using ham learn argv: {}".format(learn_ham))
 
     conn = get_smtp_conn(smtp_host, smtp_port, args.verbose)
     try:
-        run(user, maildir, conn, exclude_seen, dir_pattern, url_pattern,
-            learn_spam, learn_ham)
+        run(user, maildir, conn, exclude_seen, dir_pattern, url_pattern)
     finally:
         conn.close()
