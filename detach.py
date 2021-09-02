@@ -73,7 +73,7 @@ def parse_mails(filenames):
 
 def filter_list_admin_mails(mails):
     for mail in mails:
-        if not mail["X-List-Administrivia"]:
+        if not mail["From"] == "fsr-owner@ifsr.de" and not "Beitrag" in mail["Subject"]:
             continue
         yield mail
 
